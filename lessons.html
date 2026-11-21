@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Full Lessons — ChemSec3 Complete</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar-root"></div>
+
+  <main class="container">
+    <h1 class="section-title">📚 Complete Curriculum Lessons (22 Lessons)</h1>
+    <div class="chapter-tabs" id="chapterTabs"></div>
+
+    <div class="lesson-layout">
+      <aside class="toc-box">
+        <h3>📌 Lessons in this Chapter</h3>
+        <ul class="toc-list" id="tocList"></ul>
+        <div style="margin-top:1rem;display:grid;gap:.5rem;">
+          <a id="goMindmap" href="mindmaps.html" class="btn btn-secondary" style="font-size:.84rem;">🧠 Chapter Mind Map</a>
+          <a id="goFlash" href="flashcards.html" class="btn btn-secondary" style="font-size:.84rem;">🃏 40 Flashcards &amp; Essays</a>
+          <a id="goQuiz" href="quiz.html" class="btn btn-primary" style="font-size:.84rem;">🎯 Practice 300 MCQs</a>
+        </div>
+      </aside>
+      <div id="lessonBody" style="min-width:0;"></div>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+  <script src="js/common.js"></script>
+  <script src="js/data_lessons.js"></script>
+  <script>
+    renderNavbar('lessons');
+    renderFooter();
+
+    const params = new URLSearchParams(location.search);
+    let currentCh = params.get('ch') || '1';
+    if (!LESSONS_DATA[currentCh]) currentCh = '1';
+
+    function renderChapter(ch) {
+      currentCh = ch;
+      document.getElementById('chapterTabs').innerHTML = Object.keys(LESSONS_DATA).map(k => `
+        <button class="tab-btn ${k === ch ? 'active' : ''}" onclick="renderChapter('${k}')">
+          Ch ${k}: ${LESSONS_DATA[k].title.split(':')[1]}
+        </button>
+      `).join('');
+
+      const data = LESSONS_DATA[ch];
+      document.getElementById('goMindmap').href = `mindmaps.html?ch=${ch}`;
+      document.getElementById('goFlash').href = `flashcards.html?ch=${ch}`;
+      document.getElementById('goQuiz').href = `quiz.html?ch=${ch}`;
+
+      document.getElementById('tocList').innerHTML = data.sections.map(s => `
+        <li><a href="#${s.id}">${s.title}</a></li>
+      `).join('');
+
+      document.getElementById('lessonBody').innerHTML = `
+        <div class="lesson-section" style="border-left:6px solid var(--primary);">
+          <h2 style="border:none;margin-bottom:.3rem;">${data.title}</h2>
+          <p style="color:var(--text-muted);">${data.subtitle}</p>
+        </div>
+        ${data.sections.map(s => `
+          <section class="lesson-section" id="${s.id}">
+            <h2>${s.title}</h2>
+            ${s.html}
+          </section>
+        `).join('')}
+      `;
+    }
+    renderChapter(currentCh);
+  </script>
+</body>
+</html>

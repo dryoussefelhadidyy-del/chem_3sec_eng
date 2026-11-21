@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>200 Flashcards &amp; Essays — ChemSec3 Complete</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar-root"></div>
+
+  <main class="container">
+    <h1 class="section-title">🃏 Interactive 3D Flashcards &amp; Essay Q&amp;A (200 Cards)</h1>
+    <div class="chapter-tabs" id="fcTabs"></div>
+
+    <div class="filter-bar">
+      <strong style="font-size:.88rem;">Filter by type:</strong>
+      <div id="typeFilters" style="display:flex;gap:.4rem;flex-wrap:wrap;"></div>
+      <button class="btn btn-secondary" style="margin-left:auto;min-height:38px;padding:.35rem .85rem;font-size:.84rem;" onclick="shuffleCards()">🔀 Shuffle Cards</button>
+    </div>
+
+    <div class="flashcard-stage">
+      <div class="flashcard" id="flashcardEl" onclick="this.classList.toggle('flipped')">
+        <div class="fc-face fc-front">
+          <span class="fc-tag" id="fcType">Give Reason</span>
+          <h2 id="fcQuestion" style="font-size:clamp(1.02rem, 3vw, 1.28rem);line-height:1.55;"></h2>
+          <p style="margin-top:1rem;font-size:.82rem;color:var(--text-muted);">👆 Tap card to flip and reveal model answer</p>
+        </div>
+        <div class="fc-face fc-back">
+          <span class="fc-tag" style="background:var(--success-bg);color:var(--success);">Model Answer</span>
+          <p id="fcAnswer" style="font-size:clamp(.96rem, 2.7vw, 1.1rem);font-weight:700;line-height:1.65;"></p>
+        </div>
+      </div>
+
+      <div class="fc-controls">
+        <button class="btn btn-secondary" onclick="prevCard()">⬅️ Previous</button>
+        <span id="fcCounter" style="align-self:center;font-weight:800;padding:0 .6rem;">1 / 40</span>
+        <button class="btn btn-primary" onclick="nextCard()">Next ➡️</button>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;">
+      <h2 class="section-title">📋 Quick Study List (<span id="listCount">40</span> Questions)</h2>
+      <div id="fcAllList"></div>
+    </div>
+  </main>
+
+  <div id="footer-root"></div>
+  <script src="js/common.js"></script>
+  <script src="js/data_flashcards.js"></script>
+  <script>
+    renderNavbar('flashcards');
+    renderFooter();
+
+    const params = new URLSearchParams(location.search);
+    let currentCh = params.get('ch') || '1';
+    if (!FLASHCARDS_DATA[currentCh]) currentCh = '1';
+    let currentType = 'All';
+    let filteredList = [];
+    let cardIdx = 0;
+
+    function selectChapter(ch) {
+      currentCh = ch;
+      currentType = 'All';
+      const names = {"1":"Transition Elements","2":"Chemical Analysis","3":"Chemical Equilibrium","4":"Electrochemistry","5":"Organic Chemistry"};
+      document.getElementById('fcTabs').innerHTML = Object.keys(FLASHCARDS_DATA).map(k => `
+        <button class="tab-btn ${k === ch ? 'active' : ''}" onclick="selectChapter('${k}')">Ch ${k}: ${names[k]} (${FLASHCARDS_DATA[k].length})</button>
+      `).join('');
+      applyFilter('All');
+    }
+
+    function applyFilter(type) {
+      currentType = type;
+      const all = FLASHCARDS_DATA[currentCh];
+      const types = ['All', ...new Set(all.map(x => x.type))];
+      document.getElementById('typeFilters').innerHTML = types.map(t => `
+        <button class="tab-btn ${t === type ? 'active' : ''}" style="min-height:36px;padding:.3rem .75rem;font-size:.82rem;" onclick="applyFilter('${t}')">${t}</button>
+      `).join('');
+
+      filteredList = type === 'All' ? [...all] : all.filter(x => x.type === type);
+      cardIdx = 0;
+      renderCard();
+      renderQuickList();
+    }
+
+    function shuffleCards() {
+      for (let i = filteredList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [filteredList[i], filteredList[j]] = [filteredList[j], filteredList[i]];
+      }
+      cardIdx = 0;
+      renderCard();
+    }
+
+    function renderCard() {
+      const item = filteredList[cardIdx];
+      document.getElementById('flashcardEl').classList.remove('flipped');
+      document.getElementById('fcType').textContent = item.type;
+      document.getElementById('fcQuestion').textContent = item.q;
+      document.getElementById('fcAnswer').textContent = item.a;
+      document.getElementById('fcCounter').textContent = `${cardIdx + 1} / ${filteredList.length}`;
+    }
+
+    function renderQuickList() {
+      document.getElementById('listCount').textContent = filteredList.length;
+      document.getElementById('fcAllList').innerHTML = filteredList.map((it, idx) => `
+        <details class="q-card" style="cursor:pointer;">
+          <summary style="font-weight:700;font-size:.95rem;list-style:none;">
+            <span class="badge" style="margin-right:.45rem;margin-bottom:0;">${it.type}</span>
+            ${idx + 1}) ${it.q}
+          </summary>
+          <div style="margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);color:var(--text);">
+            <strong style="color:var(--success);">✅ Answer:</strong> ${it.a}
+          </div>
+        </details>
+      `).join('');
+    }
+
+    function nextCard() { cardIdx = (cardIdx + 1) % filteredList.length; renderCard(); }
+    function prevCard() { cardIdx = (cardIdx - 1 + filteredList.length) % filteredList.length; renderCard(); }
+
+    selectChapter(currentCh);
+  </script>
+</body>
+</html>

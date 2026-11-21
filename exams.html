@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Full Past Exams (46 Questions) — ChemSec3 Complete</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar-root"></div>
+
+  <main class="container">
+    <h1 class="section-title">📝 Complete Thanaweya Amma Past Exams (46 Questions / 3 Hours)</h1>
+    <div class="chapter-tabs" id="examTabs"></div>
+
+    <div class="quiz-controls">
+      <div>
+        <strong id="examTitle"></strong>
+        <div id="examResult" style="font-weight:700;color:var(--primary);margin-top:.25rem;font-size:.9rem;">
+          44 MCQs + 2 Essay Questions | Official Duration: 180 Minutes
+        </div>
+      </div>
+      <div style="display:flex;gap:.55rem;align-items:center;flex-wrap:wrap;">
+        <span class="badge" style="font-size:.95rem;padding:.45rem .85rem;margin:0;" id="timerDisplay">⏱️ 180:00</span>
+        <button class="btn btn-success" onclick="gradeExam()">✅ Submit &amp; Grade Exam</button>
+        <button class="btn btn-secondary" onclick="selectExam(currentYear)">🔄 Restart Exam</button>
+      </div>
+    </div>
+
+    <div class="exam-palette">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
+        <strong style="font-size:.92rem;">🗺️ Question Navigator (Tap any number to jump directly)</strong>
+        <span id="answeredCounter" style="font-size:.85rem;color:var(--text-muted);font-weight:700;">Answered: 0 / 44 MCQs</span>
+      </div>
+      <div class="palette-grid" id="paletteGrid"></div>
+    </div>
+
+    <div id="examBody"></div>
+  </main>
+
+  <div id="footer-root"></div>
+  <script src="js/common.js"></script>
+  <script src="js/data_exams.js"></script>
+  <script>
+    renderNavbar('exams');
+    renderFooter();
+
+    let currentYear = '2025';
+    let userAnswers = {};
+    let timerInterval = null;
+    let secondsLeft = 180 * 60;
+    let graded = false;
+
+    function selectExam(year) {
+      currentYear = year;
+      userAnswers = {};
+      graded = false;
+      if (timerInterval) clearInterval(timerInterval);
+
+      const years = Object.keys(EXAMS_DATA).sort((a,b) => b - a);
+      document.getElementById('examTabs').innerHTML = years.map(y => `
+        <button class="tab-btn ${y === year ? 'active' : ''}" onclick="selectExam('${y}')">${y} Exam (46 Qs)</button>
+      `).join('');
+
+      const exam = EXAMS_DATA[year];
+      document.getElementById('examTitle').textContent = exam.title;
+      document.getElementById('examResult').textContent = `44 MCQs + 2 Essay Questions | Total Marks: ${exam.totalMarks}`;
+      document.getElementById('answeredCounter').textContent = `Answered: 0 / ${exam.mcqs.length} MCQs`;
+
+      secondsLeft = exam.duration * 60;
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        if (secondsLeft > 0) { secondsLeft--; updateTimerUI(); }
+      }, 1000);
+
+      let palHtml = exam.mcqs.map((_, idx) => `
+        <button class="pal-btn" id="pal-${idx}" onclick="document.getElementById('exq-${idx}').scrollIntoView({behavior:'smooth'})">${idx + 1}</button>
+      `).join('');
+      palHtml += exam.essays.map((_, idx) => `
+        <button class="pal-btn" style="border-color:var(--purple);" onclick="document.getElementById('exes-${idx}').scrollIntoView({behavior:'smooth'})">${exam.mcqs.length + idx + 1}</button>
+      `).join('');
+      document.getElementById('paletteGrid').innerHTML = palHtml;
+
+      let bodyHtml = exam.mcqs.map((item, idx) => `
+        <article class="q-card" id="exq-${idx}">
+          <div class="q-header">
+            <span class="q-num">Question ${idx + 1} of 46</span>
+            <span class="badge" style="margin:0;">Chapter ${item.ch} — ${year} Exam</span>
+          </div>
+          <div class="q-text">${item.q}</div>
+          <div class="options-list">
+            ${item.opts.map((opt, oi) => `
+              <button class="opt-btn" id="exopt-${idx}-${oi}" onclick="pickExamOpt(${idx}, ${oi})">${['A','B','C','D'][oi]}) ${opt}</button>
+            `).join('')}
+          </div>
+          <div class="explanation-box" id="exexp-${idx}">
+            <strong>💡 Model Explanation:</strong> ${item.exp}
+          </div>
+        </article>
+      `).join('');
+
+      bodyHtml += `<h2 class="section-title" style="margin-top:2rem;">✍️ Essay Questions (2 Questions — 4 Marks)</h2>`;
+      bodyHtml += exam.essays.map((es, idx) => `
+        <article class="q-card" id="exes-${idx}" style="border-left:5px solid var(--purple);">
+          <div class="q-header">
+            <span class="q-num" style="color:var(--purple);">Essay Question ${exam.mcqs.length + idx + 1} of 46</span>
+            <span class="badge" style="background:var(--purple-bg);color:var(--purple);margin:0;">Essay (2 Marks)</span>
+          </div>
+          <div class="q-text">${es.q}</div>
+          <textarea class="essay-area" placeholder="Write your equations and steps here, then click Submit Exam or Show Model Answer to compare..."></textarea>
+          <div style="margin-top:.65rem;">
+            <button class="btn btn-secondary" style="min-height:38px;font-size:.85rem;" onclick="document.getElementById('esmod-${idx}').classList.toggle('show')">👁️ Show / Hide Model Answer</button>
+          </div>
+          <div class="explanation-box" id="esmod-${idx}" style="white-space:pre-line;">
+            <strong>✅ Model Answer:</strong>
+${es.model}
+          </div>
+        </article>
+      `).join('');
+
+      bodyHtml += `
+        <div style="text-align:center;margin:1.5rem 0;">
+          <button class="btn btn-success" style="width:100%;max-width:360px;font-size:1.03rem;" onclick="gradeExam()">✅ Submit Full Exam &amp; View Score</button>
+        </div>
+      `;
+      document.getElementById('examBody').innerHTML = bodyHtml;
+    }
+
+    function updateTimerUI() {
+      const m = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+      const s = String(secondsLeft % 60).padStart(2, '0');
+      document.getElementById('timerDisplay').textContent = `⏱️ ${m}:${s}`;
+    }
+
+    function pickExamOpt(qIdx, optIdx) {
+      if (graded) return;
+      userAnswers[qIdx] = optIdx;
+      const card = document.getElementById(`exq-${qIdx}`);
+      card.querySelectorAll('.opt-btn').forEach((b, i) => {
+        b.classList.toggle('selected', i === optIdx);
+      });
+      document.getElementById(`pal-${qIdx}`).classList.add('answered');
+      document.getElementById('answeredCounter').textContent = `Answered: ${Object.keys(userAnswers).length} / ${EXAMS_DATA[currentYear].mcqs.length} MCQs`;
+    }
+
+    function gradeExam() {
+      if (timerInterval) clearInterval(timerInterval);
+      graded = true;
+      const exam = EXAMS_DATA[currentYear];
+      let score = 0;
+      exam.mcqs.forEach((item, idx) => {
+        const chosen = userAnswers[idx];
+        const card = document.getElementById(`exq-${idx}`);
+        card.querySelectorAll('.opt-btn').forEach((b, i) => {
+          b.disabled = true;
+          b.classList.remove('selected');
+          if (i === item.ans) b.classList.add('correct');
+          if (chosen === i && chosen !== item.ans) b.classList.add('wrong');
+        });
+        const pal = document.getElementById(`pal-${idx}`);
+        pal.classList.remove('answered');
+        if (chosen === item.ans) { score++; pal.classList.add('correct'); }
+        else { pal.classList.add('wrong'); }
+        document.getElementById(`exexp-${idx}`).classList.add('show');
+      });
+      exam.essays.forEach((_, idx) => {
+        document.getElementById(`esmod-${idx}`).classList.add('show');
+      });
+      const pct = Math.round((score / exam.mcqs.length) * 100);
+      document.getElementById('examResult').textContent = `🎉 Your MCQ Score: ${score} / ${exam.mcqs.length} (${pct}%) — Review explanations and essay model answers below!`;
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    selectExam('2025');
+  </script>
+</body>
+</html>

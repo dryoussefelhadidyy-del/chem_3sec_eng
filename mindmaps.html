@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Mind Maps — ChemSec3 Complete</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar-root"></div>
+
+  <main class="container">
+    <h1 class="section-title">🧠 Comprehensive Visual Mind Maps (All 5 Chapters)</h1>
+    <div class="chapter-tabs" id="mmTabs"></div>
+    <div id="mmStage"></div>
+  </main>
+
+  <div id="footer-root"></div>
+  <script src="js/common.js"></script>
+  <script src="js/data_mindmaps.js"></script>
+  <script>
+    renderNavbar('mindmaps');
+    renderFooter();
+
+    const params = new URLSearchParams(location.search);
+    let currentCh = params.get('ch') || '1';
+    if (!MINDMAPS_DATA[currentCh]) currentCh = '1';
+
+    function renderMindmap(ch) {
+      currentCh = ch;
+      const names = {"1":"Transition Elements","2":"Chemical Analysis","3":"Chemical Equilibrium","4":"Electrochemistry","5":"Organic Chemistry"};
+      document.getElementById('mmTabs').innerHTML = Object.keys(MINDMAPS_DATA).map(k => `
+        <button class="tab-btn ${k === ch ? 'active' : ''}" onclick="renderMindmap('${k}')">Ch ${k}: ${names[k]}</button>
+      `).join('');
+
+      const mm = MINDMAPS_DATA[ch];
+      const colors = ['#1d4ed8', '#0ea5e9', '#7c3aed', '#10b981', '#f59e0b', '#dc2626'];
+      document.getElementById('mmStage').innerHTML = `
+        <div class="mindmap-container">
+          <div class="mm-root">${mm.root}</div>
+          <div class="mm-branches">
+            ${mm.branches.map((b, idx) => `
+              <div class="mm-branch" style="border-top-color:${colors[idx % colors.length]}">
+                <h3 style="color:${colors[idx % colors.length]}">🔹 ${b.title}</h3>
+                <ul>${b.items.map(it => `<li>${it}</li>`).join('')}</ul>
+              </div>
+            `).join('')}
+          </div>
+          <div style="text-align:center;margin-top:1.4rem;display:flex;gap:.65rem;justify-content:center;flex-wrap:wrap;">
+            <a href="lessons.html?ch=${ch}" class="btn btn-secondary">📚 Open Chapter Lessons</a>
+            <a href="flashcards.html?ch=${ch}" class="btn btn-primary">🃏 40 Chapter Flashcards</a>
+          </div>
+        </div>
+      `;
+    }
+    renderMindmap(currentCh);
+  </script>
+</body>
+</html>

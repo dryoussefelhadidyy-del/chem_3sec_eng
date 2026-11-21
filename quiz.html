@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Question Bank (1,500 Explained MCQs) — ChemSec3 Complete</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar-root"></div>
+
+  <main class="container">
+    <h1 class="section-title">🎯 Complete Question Bank (300 Explained MCQs / Chapter — 1,500 Total)</h1>
+    <div class="chapter-tabs" id="quizTabs"></div>
+
+    <div class="quiz-controls">
+      <div>
+        <strong id="quizInfo"></strong>
+        <div style="font-size:.86rem;color:var(--text-muted);" id="scoreText">Correct: 0 | Answered: 0</div>
+      </div>
+      <div style="display:flex;gap:.55rem;flex-wrap:wrap;align-items:center;">
+        <select id="pageSelect" class="theme-btn" onchange="goToPage(Number(this.value))"></select>
+        <button class="btn btn-secondary" onclick="resetSession()">🔄 Reset Score</button>
+      </div>
+    </div>
+
+    <div id="questionsContainer"></div>
+    <div class="pagination" id="paginationBar"></div>
+  </main>
+
+  <div id="footer-root"></div>
+  <script src="js/common.js"></script>
+  <script src="js/data_questions.js"></script>
+  <script>
+    renderNavbar('quiz');
+    renderFooter();
+
+    const params = new URLSearchParams(location.search);
+    let currentCh = params.get('ch') || '1';
+    if (!QUESTIONS_DB[currentCh]) currentCh = '1';
+    let currentPage = 1;
+    const perPage = 15;
+    let correctCount = 0;
+    let answeredCount = 0;
+    const chNames = {"1":"Transition Elements","2":"Chemical Analysis","3":"Chemical Equilibrium","4":"Electrochemistry","5":"Organic Chemistry"};
+
+    function selectQuizChapter(ch) {
+      currentCh = ch;
+      currentPage = 1;
+      document.getElementById('quizTabs').innerHTML = Object.keys(QUESTIONS_DB).map(k => `
+        <button class="tab-btn ${k === ch ? 'active' : ''}" onclick="selectQuizChapter('${k}')">
+          Ch ${k}: ${chNames[k]} (${QUESTIONS_DB[k].length})
+        </button>
+      `).join('');
+
+      const totalPages = Math.ceil(QUESTIONS_DB[ch].length / perPage);
+      document.getElementById('pageSelect').innerHTML = Array.from({length: totalPages}, (_, i) => {
+        const s = i * perPage + 1;
+        const e = Math.min((i + 1) * perPage, QUESTIONS_DB[ch].length);
+        return `<option value="${i + 1}">Questions ${s} – ${e}</option>`;
+      }).join('');
+
+      renderQuestions();
+    }
+
+    function renderQuestions() {
+      const list = QUESTIONS_DB[currentCh];
+      const totalPages = Math.ceil(list.length / perPage);
+      document.getElementById('pageSelect').value = currentPage;
+      document.getElementById('quizInfo').textContent = `Chapter ${currentCh}: ${chNames[currentCh]} — ${list.length} Questions`;
+
+      const start = (currentPage - 1) * perPage;
+      const slice = list.slice(start, start + perPage);
+
+      document.getElementById('questionsContainer').innerHTML = slice.map((item, idx) => {
+        const gIdx = start + idx + 1;
+        return `
+          <article class="q-card" id="qcard-${gIdx}">
+            <div class="q-header">
+              <span class="q-num">Question ${gIdx} of ${list.length}</span>
+              <span class="badge" style="margin:0;">Chapter ${currentCh}</span>
+            </div>
+            <div class="q-text">${item.q}</div>
+            <div class="options-list">
+              ${item.opts.map((opt, oi) => `
+                <button class="opt-btn" onclick="checkAnswer(${gIdx}, ${oi}, ${item.ans}, this)">${['A','B','C','D'][oi]}) ${opt}</button>
+              `).join('')}
+            </div>
+            <div class="explanation-box" id="exp-${gIdx}">
+              <strong>💡 Explanation:</strong> ${item.exp}
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      document.getElementById('paginationBar').innerHTML = `
+        <button class="btn btn-secondary" ${currentPage <= 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">⬅️ Previous</button>
+        <span style="font-weight:700;">Page ${currentPage} / ${totalPages}</span>
+        <button class="btn btn-primary" ${currentPage >= totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">Next ➡️</button>
+      `;
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function checkAnswer(qId, chosen, correct, btnEl) {
+      const card = document.getElementById(`qcard-${qId}`);
+      card.querySelectorAll('.opt-btn').forEach((b, i) => {
+        b.disabled = true;
+        if (i === correct) b.classList.add('correct');
+      });
+      answeredCount++;
+      if (chosen === correct) correctCount++;
+      else btnEl.classList.add('wrong');
+      document.getElementById(`exp-${qId}`).classList.add('show');
+      document.getElementById('scoreText').textContent = `Correct: ${correctCount} | Answered: ${answeredCount}`;
+    }
+
+    function goToPage(p) {
+      const totalPages = Math.ceil(QUESTIONS_DB[currentCh].length / perPage);
+      if (p < 1 || p > totalPages) return;
+      currentPage = p;
+      renderQuestions();
+    }
+
+    function resetSession() {
+      correctCount = 0; answeredCount = 0;
+      document.getElementById('scoreText').textContent = `Correct: 0 | Answered: 0`;
+      renderQuestions();
+    }
+
+    selectQuizChapter(currentCh);
+  </script>
+</body>
+</html>
